@@ -42,8 +42,8 @@ class MainActivity : AppCompatActivity() {
         page=1; clear(); next.text="بعد"; findViewById<TextView>(R.id.title).text="نوع معامله را انتخاب کنید"
         val box=baseLayout()
         val rg=RadioGroup(this).apply { orientation=RadioGroup.VERTICAL; gravity=Gravity.CENTER_HORIZONTAL }
-        val long=RadioButton(this).apply { text="Long"; textSize=20f; isChecked=true; setPadding(8,16,8,16) }
-        val sh=RadioButton(this).apply { text="Short"; textSize=20f; setPadding(8,16,8,16) }
+        val long=RadioButton(this).apply { id = View.generateViewId(); text="Long"; textSize=20f; isChecked=true; setPadding(8,16,8,16) }
+        val sh=RadioButton(this).apply { id = View.generateViewId(); text="Short"; textSize=20f; setPadding(8,16,8,16) }
         rg.addView(long); rg.addView(sh); box.addView(rg)
         rg.setOnCheckedChangeListener { _, id -> isLong = id == long.id }
         container.addView(box)
