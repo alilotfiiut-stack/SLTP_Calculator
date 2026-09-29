@@ -51,13 +51,58 @@ class MainActivity : AppCompatActivity() {
 
     private fun showPage2() {
         page=2; clear(); inputs.clear(); next.text="بعد"; findViewById<TextView>(R.id.title).text="اطلاعات معامله"
-        val box=baseLayout()
+
+        val box=baseLayout().apply {
+            setPadding(20, 16, 20, 20)
+        }
+
+        // نمایش اطلاعات به ترتیب دلخواه، با فاصله و چیدمان مرتب‌تر
         val specs=listOf(
-            Triple("fee","کارمزد (%)","0.2"), Triple("profit","سود مورد انتظار (%)",""),
-            Triple("base","حجم بیس اکانت",""), Triple("trade","حجم معامله",""),
-            Triple("entry","نقطه ورود",""), Triple("rr","RR","1") )
-        specs.forEach { (k,l,v) -> box.addView(label(l)); box.addView(field(k,l,v)) }
-        val scroll=ScrollView(this); scroll.addView(box); container.addView(scroll)
+            Triple("entry","نقطه ورود",""),
+            Triple("trade","حجم معامله",""),
+            Triple("base","حجم بیس اکانت",""),
+            Triple("profit","سود مورد انتظار (%)",""),
+            Triple("rr","RR","1"),
+            Triple("fee","کارمزد (%)","0.2")
+        )
+
+        specs.forEach { (k,l,v) ->
+            val row = LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL
+                gravity = Gravity.CENTER_VERTICAL
+                layoutDirection = View.LAYOUT_DIRECTION_RTL
+                setPadding(0, 5, 0, 5)
+                layoutParams = LinearLayout.LayoutParams(-1, 68).apply {
+                    bottomMargin = 8
+                }
+            }
+
+            val lbl = TextView(this).apply {
+                text = l
+                textSize = 16f
+                setTextColor(0xFF222222.toInt())
+                gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
+                layoutParams = LinearLayout.LayoutParams(0, -1, 1f).apply {
+                    marginStart = 10
+                }
+            }
+
+            val input = field(k, l, v).apply {
+                layoutParams = LinearLayout.LayoutParams(155, 54).apply {
+                    marginStart = 4
+                }
+            }
+
+            row.addView(lbl)
+            row.addView(input)
+            box.addView(row)
+        }
+
+        val scroll=ScrollView(this).apply {
+            isFillViewport = true
+            addView(box)
+        }
+        container.addView(scroll)
     }
 
     private fun num(key:String):Double? = inputs[key]?.text?.toString()?.trim()?.replace(",",".")?.toDoubleOrNull()
