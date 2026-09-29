@@ -1,1 +1,9 @@
-<resources><color name="black">#111111</color><color name="gray">#666666</color><color name="light">#F5F5F5</color></resources>
+<resources>
+    <color name="bg">#F7F8FC</color>
+    <color name="card">#FFFFFF</color>
+    <color name="primary">#2457D6</color>
+    <color name="primary_dark">#1742A5</color>
+    <color name="text">#172033</color>
+    <color name="muted">#687386</color>
+    <color name="border">#DDE2EA</color>
+</resources>

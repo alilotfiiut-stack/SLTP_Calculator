@@ -25,89 +25,91 @@ class MainActivity : AppCompatActivity() {
         next.setOnClickListener { if (page == 1) showPage2() else if (page == 2) calculateAndShow() else showPage1() }
     }
 
+    private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
+
     private fun baseLayout(): LinearLayout = LinearLayout(this).apply {
-        orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL; layoutDirection = View.LAYOUT_DIRECTION_RTL
+        orientation = LinearLayout.VERTICAL
+        gravity = Gravity.CENTER_HORIZONTAL
+        layoutDirection = View.LAYOUT_DIRECTION_RTL
+        setPadding(dp(2), dp(2), dp(2), dp(2))
     }
-    private fun label(text: String) = TextView(this).apply { this.text=text; textSize=16f; setTextColor(0xFF222222.toInt()); setPadding(0,10,0,6) }
-    private fun field(key:String, hint:String, value:String=""): EditText = EditText(this).apply {
+
+    private fun label(text: String) = TextView(this).apply {
+        this.text = text
+        textSize = 15f
+        setTextColor(0xFF172033.toInt())
+        setTypeface(Typeface.DEFAULT, Typeface.BOLD)
+        gravity = Gravity.CENTER_VERTICAL
+    }
+
+    private fun field(key: String, hint: String, value: String = ""): EditText = EditText(this).apply {
         inputType = InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL
-        textSize=17f; setSingleLine(); setHint(hint); setText(value); gravity=Gravity.CENTER; layoutDirection=View.LAYOUT_DIRECTION_LTR
-        background = getDrawable(android.R.drawable.edit_text); setPadding(16,0,16,0)
-        layoutParams=LinearLayout.LayoutParams(-1,54).apply { bottomMargin=5 }
-        inputs[key]=this
+        textSize = 17f
+        setSingleLine(true)
+        setHint(hint)
+        setText(value)
+        gravity = Gravity.CENTER
+        layoutDirection = View.LAYOUT_DIRECTION_LTR
+        background = getDrawable(com.example.sltpcalculator.R.drawable.bg_input)
+        setPadding(dp(14), 0, dp(14), 0)
+        layoutParams = LinearLayout.LayoutParams(-1, dp(50))
+        inputs[key] = this
     }
+
+    private fun card(): LinearLayout = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        gravity = Gravity.CENTER_HORIZONTAL
+        layoutDirection = View.LAYOUT_DIRECTION_RTL
+        background = getDrawable(R.drawable.bg_card)
+        elevation = dp(2).toFloat()
+        setPadding(dp(16), dp(12), dp(16), dp(12))
+    }
+
     private fun clear() { container.removeAllViews() }
 
     private fun showPage1() {
-        page=1; clear(); next.text="بعد"; findViewById<TextView>(R.id.title).text="نوع معامله را انتخاب کنید"
-        val box=baseLayout()
-        val rg=RadioGroup(this).apply { orientation=RadioGroup.VERTICAL; gravity=Gravity.CENTER_HORIZONTAL }
-        val long=RadioButton(this).apply { id = View.generateViewId(); text="Long"; textSize=20f; isChecked=true; setPadding(8,16,8,16) }
-        val sh=RadioButton(this).apply { id = View.generateViewId(); text="Short"; textSize=20f; setPadding(8,16,8,16) }
-        rg.addView(long); rg.addView(sh); box.addView(rg)
+        page = 1; clear(); next.text = "ادامه"; findViewById<TextView>(R.id.title).text = "نوع معامله را انتخاب کنید"
+        findViewById<TextView>(R.id.subtitle).text = "جهت معامله را مشخص کنید"
+        val box = baseLayout()
+        val spacer = Space(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 0.20f) }
+        box.addView(spacer)
+        val c = card().apply { layoutParams = LinearLayout.LayoutParams(-1, dp(190)) }
+        val head = TextView(this).apply {
+            text = "جهت معامله"; textSize = 18f; setTypeface(Typeface.DEFAULT, Typeface.BOLD)
+            setTextColor(0xFF172033.toInt()); gravity = Gravity.CENTER; layoutParams = LinearLayout.LayoutParams(-1, dp(45))
+        }
+        val rg = RadioGroup(this).apply { orientation = RadioGroup.HORIZONTAL; gravity = Gravity.CENTER; layoutDirection = View.LAYOUT_DIRECTION_LTR }
+        val long = RadioButton(this).apply { id = View.generateViewId(); text = "Long"; textSize = 18f; isChecked = true; setPadding(dp(18), dp(8), dp(18), dp(8)) }
+        val sh = RadioButton(this).apply { id = View.generateViewId(); text = "Short"; textSize = 18f; setPadding(dp(18), dp(8), dp(18), dp(8)) }
+        rg.addView(long); rg.addView(sh); c.addView(head); c.addView(rg)
         rg.setOnCheckedChangeListener { _, id -> isLong = id == long.id }
+        box.addView(c)
+        box.addView(Space(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 0.55f) })
         container.addView(box)
     }
 
     private fun showPage2() {
-        page=2; clear(); inputs.clear(); next.text="بعد"; findViewById<TextView>(R.id.title).text="اطلاعات معامله"
+        page = 2; clear(); inputs.clear(); next.text = "محاسبه"; findViewById<TextView>(R.id.title).text = "اطلاعات معامله"
+        findViewById<TextView>(R.id.subtitle).text = "مقادیر معامله را وارد کنید"
 
-        // صفحه دوم عمداً به صورت عمودی و با فاصله‌های یکنواخت طراحی شده
-        // تا هر مورد فضای کافی داشته باشد و نوشته‌ها روی هم نیفتند.
         val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            gravity = Gravity.CENTER_HORIZONTAL
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER_HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(24, 8, 24, 12)
+            setPadding(dp(2), dp(2), dp(2), dp(4))
             layoutParams = LinearLayout.LayoutParams(-1, -1)
         }
-
         val specs = listOf(
-            Triple("entry", "نقطه ورود", ""),
-            Triple("trade", "حجم معامله", ""),
-            Triple("base", "حجم بیس اکانت", ""),
-            Triple("profit", "سود مورد انتظار (%)", ""),
-            Triple("rr", "RR", "1"),
-            Triple("fee", "کارمزد (%)", "0.2")
+            Triple("entry", "نقطه ورود", ""), Triple("trade", "حجم معامله", ""),
+            Triple("base", "حجم بیس اکانت", ""), Triple("profit", "سود مورد انتظار (%)", ""),
+            Triple("rr", "RR", "1"), Triple("fee", "کارمزد (%)", "0.2")
         )
-
         specs.forEach { (k, l, v) ->
-            val row = LinearLayout(this).apply {
-                orientation = LinearLayout.VERTICAL
-                gravity = Gravity.CENTER_HORIZONTAL
-                layoutDirection = View.LAYOUT_DIRECTION_RTL
-                layoutParams = LinearLayout.LayoutParams(-1, 0, 1f).apply {
-                    topMargin = 3
-                    bottomMargin = 3
-                }
-            }
-
-            val lbl = TextView(this).apply {
-                text = l
-                textSize = 16f
-                setTextColor(0xFF222222.toInt())
-                gravity = Gravity.CENTER
-                layoutParams = LinearLayout.LayoutParams(-1, 0, 0.38f)
-            }
-
-            val input = field(k, l, v).apply {
-                textSize = 17f
-                layoutParams = LinearLayout.LayoutParams(210, 0).apply {
-                    weight = 0.62f
-                    gravity = Gravity.CENTER_HORIZONTAL
-                }
-            }
-
-            row.addView(lbl)
-            row.addView(input)
-            box.addView(row)
+            val c = card().apply { layoutParams = LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(4); bottomMargin = dp(4) } }
+            val lbl = label(l).apply { layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f); gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT }
+            val input = field(k, l, v).apply { layoutParams = LinearLayout.LayoutParams(-1, 0, 0.57f) }
+            c.addView(lbl); c.addView(input); box.addView(c)
         }
-
-        val scroll = ScrollView(this).apply {
-            isFillViewport = true
-            layoutParams = FrameLayout.LayoutParams(-1, -1)
-            addView(box)
-        }
+        val scroll = ScrollView(this).apply { isFillViewport = true; layoutParams = FrameLayout.LayoutParams(-1, -1); addView(box) }
         container.addView(scroll)
     }
 
@@ -131,6 +133,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun showResult(sl:Double,tp:Double,entry:Double) {
         page=3; clear(); next.text="محاسبه جدید"; findViewById<TextView>(R.id.title).text="نتیجه محاسبه"
+        findViewById<TextView>(R.id.subtitle).text="مقادیر نهایی معامله"
         val box=baseLayout()
         val type=TextView(this).apply { text=if(isLong) "LONG" else "SHORT"; textSize=18f; gravity=Gravity.CENTER; setPadding(0,8,0,24) }
         val slv=TextView(this).apply { text="Stop Loss\n${fmt(sl)}"; textSize=28f; typeface=Typeface.DEFAULT_BOLD; gravity=Gravity.CENTER; setPadding(0,25,0,35) }
