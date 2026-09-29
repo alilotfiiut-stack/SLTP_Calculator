@@ -52,28 +52,33 @@ class MainActivity : AppCompatActivity() {
     private fun showPage2() {
         page=2; clear(); inputs.clear(); next.text="بعد"; findViewById<TextView>(R.id.title).text="اطلاعات معامله"
 
-        val box=baseLayout().apply {
-            setPadding(20, 16, 20, 20)
+        // صفحه دوم عمداً به صورت عمودی و با فاصله‌های یکنواخت طراحی شده
+        // تا هر مورد فضای کافی داشته باشد و نوشته‌ها روی هم نیفتند.
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(24, 8, 24, 12)
+            layoutParams = LinearLayout.LayoutParams(-1, -1)
         }
 
-        // نمایش اطلاعات به ترتیب دلخواه، با فاصله و چیدمان مرتب‌تر
-        val specs=listOf(
-            Triple("entry","نقطه ورود",""),
-            Triple("trade","حجم معامله",""),
-            Triple("base","حجم بیس اکانت",""),
-            Triple("profit","سود مورد انتظار (%)",""),
-            Triple("rr","RR","1"),
-            Triple("fee","کارمزد (%)","0.2")
+        val specs = listOf(
+            Triple("entry", "نقطه ورود", ""),
+            Triple("trade", "حجم معامله", ""),
+            Triple("base", "حجم بیس اکانت", ""),
+            Triple("profit", "سود مورد انتظار (%)", ""),
+            Triple("rr", "RR", "1"),
+            Triple("fee", "کارمزد (%)", "0.2")
         )
 
-        specs.forEach { (k,l,v) ->
+        specs.forEach { (k, l, v) ->
             val row = LinearLayout(this).apply {
-                orientation = LinearLayout.HORIZONTAL
-                gravity = Gravity.CENTER_VERTICAL
+                orientation = LinearLayout.VERTICAL
+                gravity = Gravity.CENTER_HORIZONTAL
                 layoutDirection = View.LAYOUT_DIRECTION_RTL
-                setPadding(0, 5, 0, 5)
-                layoutParams = LinearLayout.LayoutParams(-1, 68).apply {
-                    bottomMargin = 8
+                layoutParams = LinearLayout.LayoutParams(-1, 0, 1f).apply {
+                    topMargin = 3
+                    bottomMargin = 3
                 }
             }
 
@@ -81,15 +86,15 @@ class MainActivity : AppCompatActivity() {
                 text = l
                 textSize = 16f
                 setTextColor(0xFF222222.toInt())
-                gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
-                layoutParams = LinearLayout.LayoutParams(0, -1, 1f).apply {
-                    marginStart = 10
-                }
+                gravity = Gravity.CENTER
+                layoutParams = LinearLayout.LayoutParams(-1, 0, 0.38f)
             }
 
             val input = field(k, l, v).apply {
-                layoutParams = LinearLayout.LayoutParams(155, 54).apply {
-                    marginStart = 4
+                textSize = 17f
+                layoutParams = LinearLayout.LayoutParams(210, 0).apply {
+                    weight = 0.62f
+                    gravity = Gravity.CENTER_HORIZONTAL
                 }
             }
 
@@ -98,8 +103,9 @@ class MainActivity : AppCompatActivity() {
             box.addView(row)
         }
 
-        val scroll=ScrollView(this).apply {
+        val scroll = ScrollView(this).apply {
             isFillViewport = true
+            layoutParams = FrameLayout.LayoutParams(-1, -1)
             addView(box)
         }
         container.addView(scroll)
