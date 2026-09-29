@@ -1,0 +1,5 @@
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android" android:layout_width="match_parent" android:layout_height="match_parent" android:orientation="vertical" android:padding="24dp" android:layoutDirection="rtl">
+    <TextView android:id="@+id/title" android:layout_width="match_parent" android:layout_height="wrap_content" android:text="محاسبه‌گر Stop Loss / Take Profit" android:textSize="24sp" android:textStyle="bold" android:textColor="@color/black" android:gravity="center" android:layout_marginTop="18dp" android:layout_marginBottom="28dp"/>
+    <FrameLayout android:id="@+id/container" android:layout_width="match_parent" android:layout_height="0dp" android:layout_weight="1"/>
+    <Button android:id="@+id/nextButton" android:layout_width="match_parent" android:layout_height="56dp" android:text="بعد" android:textSize="17sp" android:layout_marginTop="16dp"/>
+</LinearLayout>
