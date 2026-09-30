@@ -84,7 +84,20 @@ class MainActivity : AppCompatActivity() {
         rg.addView(long); rg.addView(sh); c.addView(head); c.addView(rg)
         rg.setOnCheckedChangeListener { _, id -> isLong = id == long.id }
         box.addView(c)
-        box.addView(Space(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 0.55f) })
+        box.addView(Space(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 0.18f) })
+        val formulaCard = card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(108))
+        }
+        val formula = TextView(this).apply {
+            text = "حجم معامله = (درصد ضرر مورد انتظار ÷ (SL تریدینگ ویو + کارمزد)) × حجم بیس اکانت"
+            textSize = 14f
+            gravity = Gravity.CENTER
+            setTextColor(0xFF172033.toInt())
+            setPadding(dp(8), dp(4), dp(8), dp(4))
+        }
+        formulaCard.addView(formula, LinearLayout.LayoutParams(-1, -1))
+        box.addView(formulaCard)
+        box.addView(Space(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 0.18f) })
         container.addView(box)
     }
 
@@ -100,7 +113,7 @@ class MainActivity : AppCompatActivity() {
         }
         val specs = listOf(
             Triple("entry", "نقطه ورود", ""), Triple("trade", "حجم معامله", ""),
-            Triple("base", "حجم بیس اکانت", ""), Triple("profit", "سود مورد انتظار (%)", ""),
+            Triple("base", "حجم بیس اکانت", ""), Triple("profit", "ضرر مورد انتظار (%)", ""),
             Triple("rr", "RR", "1"), Triple("fee", "کارمزد (%)", "0.2")
         )
         specs.forEach { (k, l, v) ->
@@ -114,7 +127,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun num(key:String):Double? = inputs[key]?.text?.toString()?.trim()?.replace(",",".")?.toDoubleOrNull()
-    private fun fmt(x:Double):String = String.format(Locale.US,"%.8f",x).trimEnd('0').trimEnd('.')
+    private fun fmt(x:Double):String = String.format(Locale.US,"%.3f",x)
 
     private fun calculateAndShow() {
         val feePct=num("fee"); val profitPct=num("profit"); val base=num("base"); val trade=num("trade"); val entry=num("entry"); val rr=num("rr")
@@ -134,10 +147,64 @@ class MainActivity : AppCompatActivity() {
     private fun showResult(sl:Double,tp:Double,entry:Double) {
         page=3; clear(); next.text="محاسبه جدید"; findViewById<TextView>(R.id.title).text="نتیجه محاسبه"
         findViewById<TextView>(R.id.subtitle).text="مقادیر نهایی معامله"
-        val box=baseLayout()
-        val type=TextView(this).apply { text=if(isLong) "LONG" else "SHORT"; textSize=18f; gravity=Gravity.CENTER; setPadding(0,8,0,24) }
-        val slv=TextView(this).apply { text="Stop Loss\n${fmt(sl)}"; textSize=28f; typeface=Typeface.DEFAULT_BOLD; gravity=Gravity.CENTER; setPadding(0,25,0,35) }
-        val tpv=TextView(this).apply { text="Take Profit\n${fmt(tp)}"; textSize=28f; typeface=Typeface.DEFAULT_BOLD; gravity=Gravity.CENTER; setPadding(0,25,0,25) }
-        box.addView(type); box.addView(slv); box.addView(tpv); container.addView(box)
+
+        val scroll = ScrollView(this).apply {
+            isFillViewport = true
+            layoutParams = FrameLayout.LayoutParams(-1, -1)
+        }
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(6), dp(8), dp(6), dp(16))
+        }
+
+        val direction = card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(68)).apply { bottomMargin = dp(12) }
+        }
+        val directionText = TextView(this).apply {
+            text = if (isLong) "LONG" else "SHORT"
+            textSize = 22f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setTextColor(0xFF172033.toInt())
+            layoutParams = LinearLayout.LayoutParams(-1, -1)
+        }
+        direction.addView(directionText)
+
+        fun resultCard(title:String, value:Double): LinearLayout = card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f).apply {
+                topMargin = dp(6); bottomMargin = dp(6)
+            }
+            val t = TextView(this@MainActivity).apply {
+                text = title
+                textSize = 17f
+                typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+                setTextColor(0xFF172033.toInt())
+                layoutParams = LinearLayout.LayoutParams(-1, 0, 0.42f)
+            }
+            val v = TextView(this@MainActivity).apply {
+                text = fmt(value)
+                textSize = 30f
+                typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+                setTextColor(0xFF172033.toInt())
+                layoutParams = LinearLayout.LayoutParams(-1, 0, 0.58f)
+            }
+            addView(t); addView(v)
+        }
+
+        val slCard = resultCard("Stop Loss", sl)
+        val tpCard = resultCard("Take Profit", tp)
+        val entryCard = resultCard("نقطه ورود", entry)
+
+        box.addView(direction)
+        box.addView(slCard)
+        box.addView(tpCard)
+        box.addView(entryCard)
+        scroll.addView(box)
+        container.addView(scroll)
     }
+
 }
