@@ -22,7 +22,7 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         container = findViewById(R.id.container); next = findViewById(R.id.nextButton)
         showPage1()
-        next.setOnClickListener { if (page == 1) showPage2() else if (page == 2) calculateAndShow() else showPage1() }
+        next.setOnClickListener { if (page == 1) showPage2() else if (page == 2) calculateAndShow() else showPage2(true) }
     }
 
     private fun dp(v: Int): Int = (v * resources.displayMetrics.density).toInt()
@@ -101,8 +101,8 @@ class MainActivity : AppCompatActivity() {
         container.addView(box)
     }
 
-    private fun showPage2() {
-        page = 2; clear(); inputs.clear(); next.text = "محاسبه"; findViewById<TextView>(R.id.title).text = "اطلاعات معامله"
+    private fun showPage2(preserveValues: Boolean = false) {
+        page = 2; clear(); next.text = "محاسبه"; findViewById<TextView>(R.id.title).text = "اطلاعات معامله"
         findViewById<TextView>(R.id.subtitle).text = "مقادیر معامله را وارد کنید"
 
         val box = LinearLayout(this).apply {
@@ -119,7 +119,8 @@ class MainActivity : AppCompatActivity() {
         specs.forEach { (k, l, v) ->
             val c = card().apply { layoutParams = LinearLayout.LayoutParams(-1, 0, 1f).apply { topMargin = dp(4); bottomMargin = dp(4) } }
             val lbl = label(l).apply { layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f); gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT }
-            val input = field(k, l, v).apply { layoutParams = LinearLayout.LayoutParams(-1, 0, 0.57f) }
+            val preserved = if (preserveValues) inputs[k]?.text?.toString() ?: v else v
+            val input = field(k, l, preserved).apply { layoutParams = LinearLayout.LayoutParams(-1, 0, 0.57f) }
             c.addView(lbl); c.addView(input); box.addView(c)
         }
         val scroll = ScrollView(this).apply { isFillViewport = true; layoutParams = FrameLayout.LayoutParams(-1, -1); addView(box) }
@@ -145,7 +146,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun showResult(sl:Double,tp:Double,entry:Double) {
-        page=3; clear(); next.text="محاسبه جدید"; findViewById<TextView>(R.id.title).text="نتیجه محاسبه"
+        page=3; clear(); next.text="بازگشت به اطلاعات معامله"; findViewById<TextView>(R.id.title).text="نتیجه محاسبه"
         findViewById<TextView>(R.id.subtitle).text="مقادیر نهایی معامله"
 
         val scroll = ScrollView(this).apply {
@@ -195,7 +196,7 @@ class MainActivity : AppCompatActivity() {
             addView(t); addView(v)
         }
 
-        val slCard = resultCard("Stop Loss", sl)
+        val slCard = resultCard("Stop Loss", abs(sl))
         val tpCard = resultCard("Take Profit", tp)
         val entryCard = resultCard("نقطه ورود", entry)
 
