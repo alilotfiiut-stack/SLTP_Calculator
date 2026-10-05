@@ -112,7 +112,7 @@ class MainActivity : AppCompatActivity() {
             layoutParams = LinearLayout.LayoutParams(-1, -1)
         }
         val specs = listOf(
-            Triple("entry", "نقطه ورود", ""), Triple("trade", "حجم معامله", ""),
+            Triple("entry", "قیمت ورود", ""), Triple("trade", "حجم معامله", ""),
             Triple("base", "حجم بیس اکانت", ""), Triple("profit", "ضرر مورد انتظار (%)", ""),
             Triple("rr", "RR", "1"), Triple("fee", "کارمزد (%)", "0.2")
         )
@@ -142,10 +142,12 @@ class MainActivity : AppCompatActivity() {
         val f:Double; val e:Double
         if (isLong) { f=d/trade-1.0; e=c/trade+1.0 } else { f=d/trade+1.0; e=c/trade-1.0 }
         val sl=f*entry!!; val tp=e*entry
-        showResult(sl,tp,entry)
+        val feeCostPct = (feePct!! * trade) / 100.0
+        val breakeven = if (isLong) (1.0 + feeCostPct) * entry else (1.0 - feeCostPct) * entry
+        showResult(sl,tp,entry,breakeven)
     }
 
-    private fun showResult(sl:Double,tp:Double,entry:Double) {
+    private fun showResult(sl:Double,tp:Double,entry:Double,breakeven:Double) {
         page=3; clear(); next.text="بازگشت به اطلاعات معامله"; findViewById<TextView>(R.id.title).text="نتیجه محاسبه"
         findViewById<TextView>(R.id.subtitle).text="مقادیر نهایی معامله"
 
@@ -173,7 +175,12 @@ class MainActivity : AppCompatActivity() {
         }
         direction.addView(directionText)
 
-        fun resultCard(title:String, value:Double): LinearLayout = card().apply {
+        fun resultCard(title:String, value:Double, strokeColor:Int): LinearLayout = card().apply {
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(0xFFFFFFFF.toInt())
+                setStroke(dp(2), strokeColor)
+                cornerRadius = dp(18).toFloat()
+            }
             layoutParams = LinearLayout.LayoutParams(-1, 0, 1f).apply {
                 topMargin = dp(6); bottomMargin = dp(6)
             }
@@ -196,13 +203,15 @@ class MainActivity : AppCompatActivity() {
             addView(t); addView(v)
         }
 
-        val slCard = resultCard("Stop Loss", abs(sl))
-        val tpCard = resultCard("Take Profit", tp)
-        val entryCard = resultCard("نقطه ورود", entry)
+        val slCard = resultCard("Stop Loss", abs(sl), 0xFFE53935.toInt())
+        val tpCard = resultCard("Take Profit", tp, 0xFF43A047.toInt())
+        val breakEvenCard = resultCard("نقطه سر به سر", breakeven, 0xFF90CAF9.toInt())
+        val entryCard = resultCard("قیمت ورود", entry, 0xFFE6E6E6.toInt())
 
         box.addView(direction)
         box.addView(slCard)
         box.addView(tpCard)
+        box.addView(breakEvenCard)
         box.addView(entryCard)
         scroll.addView(box)
         container.addView(scroll)
