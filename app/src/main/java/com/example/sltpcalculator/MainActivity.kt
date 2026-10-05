@@ -142,8 +142,10 @@ class MainActivity : AppCompatActivity() {
         val f:Double; val e:Double
         if (isLong) { f=d/trade-1.0; e=c/trade+1.0 } else { f=d/trade+1.0; e=c/trade-1.0 }
         val sl=f*entry!!; val tp=e*entry
-        val feeCostPct = (feePct!! * trade) / 10000.0
-        val breakeven = if (isLong) (1.0 + feeCostPct) * entry else (1.0 - feeCostPct) * entry
+        // Break-even: A = fee(%)/100; Long: b = 1 + A; Short: b = 1 - A
+        val aBreakEven = feePct!! / 100.0
+        val bBreakEven = if (isLong) 1.0 + aBreakEven else 1.0 - aBreakEven
+        val breakeven = entry!! * bBreakEven
         showResult(sl,tp,entry,breakeven)
     }
 
