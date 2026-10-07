@@ -85,7 +85,7 @@ class MainActivity : AppCompatActivity() {
         page = 0
         clear()
         next.visibility = View.GONE
-        setHeader("محاسبه‌گر Stop Loss / Take Profit", "یک گزینه را انتخاب کنید")
+        setHeader("نوع محاسبه را انتخاب کنید", "")
 
         val box = baseLayout()
         box.setPadding(dp(2), dp(8), dp(2), dp(8))
@@ -122,10 +122,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
 
-        box.addView(homeOption("۱. محاسبه RR اسمی", "محاسبه RR اسمی بر اساس SL، RR واقعی و کارمزد") {
+        box.addView(homeOption("محاسبه RR اسمی", "") {
             showNominalInfo()
         })
-        box.addView(homeOption("۲. محاسبه SL و TP", "محاسبه همان روش قبلی برنامه") {
+        box.addView(homeOption("محاسبه SL و TP", "") {
             showTradeInfo()
         })
 
@@ -164,23 +164,61 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(2), dp(2), dp(2), dp(4))
+            setPadding(dp(2), dp(0), dp(2), dp(2))
             layoutParams = LinearLayout.LayoutParams(-1, -1)
         }
+
+        // جهت معامله در ابتدای فرم قرار می‌گیرد تا تمام کادرها در همان صفحه دیده شوند.
+        val directionCard = card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(64)).apply {
+                topMargin = dp(1)
+                bottomMargin = dp(2)
+            }
+        }
+        directionCard.addView(label("جهت معامله").apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.42f)
+            gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
+        })
+
+        val rg = RadioGroup(this).apply {
+            orientation = RadioGroup.HORIZONTAL
+            gravity = Gravity.CENTER
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.58f)
+        }
+        val long = RadioButton(this).apply {
+            id = View.generateViewId()
+            text = "Long"
+            textSize = 17f
+            isChecked = isLong
+            setPadding(dp(14), dp(2), dp(14), dp(2))
+        }
+        val sh = RadioButton(this).apply {
+            id = View.generateViewId()
+            text = "Short"
+            textSize = 17f
+            isChecked = !isLong
+            setPadding(dp(14), dp(2), dp(14), dp(2))
+        }
+        rg.addView(long)
+        rg.addView(sh)
+        rg.setOnCheckedChangeListener { _, id -> isLong = id == long.id }
+        directionCard.addView(rg)
+        box.addView(directionCard)
 
         val specs = listOf(
             Triple("entry", "قیمت ورود", ""),
             Triple("trade", "حجم معامله", ""),
             Triple("base", "حجم بیس اکانت", ""),
             Triple("profit", "ضرر مورد انتظار (%)", ""),
-            Triple("real_rr", "RR واقعی", "1")
+            Triple("real_rr", "Actual RR", "1")
         )
 
         specs.forEach { (k, l, v) ->
             val c = card().apply {
-                layoutParams = LinearLayout.LayoutParams(-1, 0, 1f).apply {
-                    topMargin = dp(4)
-                    bottomMargin = dp(4)
+                layoutParams = LinearLayout.LayoutParams(-1, dp(64)).apply {
+                    topMargin = dp(2)
+                    bottomMargin = dp(2)
                 }
             }
             val lbl = label(l).apply {
@@ -195,43 +233,6 @@ class MainActivity : AppCompatActivity() {
             c.addView(input)
             box.addView(c)
         }
-
-        val directionCard = card().apply {
-            layoutParams = LinearLayout.LayoutParams(-1, 0, 1f).apply {
-                topMargin = dp(4)
-                bottomMargin = dp(4)
-            }
-        }
-        directionCard.addView(label("جهت معامله").apply {
-            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f)
-            gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
-        })
-
-        val rg = RadioGroup(this).apply {
-            orientation = RadioGroup.HORIZONTAL
-            gravity = Gravity.CENTER
-            layoutDirection = View.LAYOUT_DIRECTION_LTR
-            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.57f)
-        }
-        val long = RadioButton(this).apply {
-            id = View.generateViewId()
-            text = "Long"
-            textSize = 18f
-            isChecked = isLong
-            setPadding(dp(18), dp(8), dp(18), dp(8))
-        }
-        val sh = RadioButton(this).apply {
-            id = View.generateViewId()
-            text = "Short"
-            textSize = 18f
-            isChecked = !isLong
-            setPadding(dp(18), dp(8), dp(18), dp(8))
-        }
-        rg.addView(long)
-        rg.addView(sh)
-        rg.setOnCheckedChangeListener { _, id -> isLong = id == long.id }
-        directionCard.addView(rg)
-        box.addView(directionCard)
 
         val scroll = ScrollView(this).apply {
             isFillViewport = true
@@ -433,7 +434,7 @@ class MainActivity : AppCompatActivity() {
         clear()
         next.visibility = View.VISIBLE
         next.text = "محاسبه"
-        setHeader("اطلاعات معامله", "SL و RR واقعی را وارد کنید")
+        setHeader("اطلاعات معامله", "مقادیر معامله را وارد کنید")
 
         val box = baseLayout().apply {
             setPadding(dp(2), dp(8), dp(2), dp(8))
@@ -463,7 +464,7 @@ class MainActivity : AppCompatActivity() {
                 bottomMargin = dp(6)
             }
         }
-        rrCard.addView(label("RR واقعی").apply {
+        rrCard.addView(label("Actual RR").apply {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f)
             gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
         })
