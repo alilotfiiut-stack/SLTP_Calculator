@@ -163,15 +163,15 @@ class MainActivity : AppCompatActivity() {
             orientation = LinearLayout.VERTICAL
             gravity = Gravity.CENTER_HORIZONTAL
             layoutDirection = View.LAYOUT_DIRECTION_RTL
-            setPadding(dp(2), dp(0), dp(2), dp(2))
+            setPadding(dp(0), dp(0), dp(0), dp(2))
             layoutParams = LinearLayout.LayoutParams(-1, -1)
         }
 
         // جهت معامله در ابتدای فرم قرار می‌گیرد تا تمام کادرها در همان صفحه دیده شوند.
         val directionCard = card().apply {
-            layoutParams = LinearLayout.LayoutParams(-1, dp(64)).apply {
-                topMargin = dp(1)
-                bottomMargin = dp(2)
+            layoutParams = LinearLayout.LayoutParams(-1, dp(72)).apply {
+                topMargin = dp(2)
+                bottomMargin = dp(5)
             }
         }
         directionCard.addView(label("جهت معامله").apply {
@@ -215,9 +215,9 @@ class MainActivity : AppCompatActivity() {
 
         specs.forEach { (k, l, v) ->
             val c = card().apply {
-                layoutParams = LinearLayout.LayoutParams(-1, dp(64)).apply {
-                    topMargin = dp(2)
-                    bottomMargin = dp(2)
+                layoutParams = LinearLayout.LayoutParams(-1, dp(72)).apply {
+                    topMargin = dp(3)
+                    bottomMargin = dp(5)
                 }
             }
             val lbl = label(l).apply {
