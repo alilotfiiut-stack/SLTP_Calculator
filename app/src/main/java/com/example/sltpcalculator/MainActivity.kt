@@ -88,19 +88,24 @@ class MainActivity : AppCompatActivity() {
         setHeader("نوع محاسبه را انتخاب کنید", "")
 
         val box = baseLayout()
-        box.setPadding(dp(2), dp(8), dp(2), dp(8))
+        box.setPadding(dp(2), dp(2), dp(2), dp(2))
 
+        // Move the title area slightly lower and keep the two choices centered as a group.
         box.addView(Space(this).apply {
-            layoutParams = LinearLayout.LayoutParams(1, 0, 0.18f)
+            layoutParams = LinearLayout.LayoutParams(1, 0, 0.22f)
         })
 
-        fun homeOption(title: String, subtitle: String, onClick: () -> Unit): LinearLayout {
+        fun homeOption(title: String, onClick: () -> Unit): LinearLayout {
             return card().apply {
                 isClickable = true
                 isFocusable = true
-                layoutParams = LinearLayout.LayoutParams(-1, dp(118)).apply {
-                    topMargin = dp(8)
-                    bottomMargin = dp(8)
+                gravity = Gravity.CENTER
+                background = getDrawable(R.drawable.bg_home_card)
+                elevation = dp(5).toFloat()
+                setPadding(dp(12), 0, dp(12), 0)
+                layoutParams = LinearLayout.LayoutParams(-1, dp(112)).apply {
+                    topMargin = dp(9)
+                    bottomMargin = dp(9)
                 }
                 setOnClickListener { onClick() }
 
@@ -109,28 +114,22 @@ class MainActivity : AppCompatActivity() {
                     textSize = 19f
                     typeface = Typeface.DEFAULT_BOLD
                     gravity = Gravity.CENTER
+                    textAlignment = View.TEXT_ALIGNMENT_CENTER
                     setTextColor(0xFF172033.toInt())
-                    layoutParams = LinearLayout.LayoutParams(-1, 0, 0.55f)
-                })
-                addView(TextView(this@MainActivity).apply {
-                    text = subtitle
-                    textSize = 13f
-                    gravity = Gravity.CENTER
-                    setTextColor(0xFF687386.toInt())
-                    layoutParams = LinearLayout.LayoutParams(-1, 0, 0.45f)
+                    layoutParams = LinearLayout.LayoutParams(-1, -1)
                 })
             }
         }
 
-        box.addView(homeOption("محاسبه RR اسمی", "") {
+        box.addView(homeOption("محاسبه RR اسمی") {
             showNominalInfo()
         })
-        box.addView(homeOption("محاسبه SL و TP", "") {
+        box.addView(homeOption("محاسبه SL و TP") {
             showTradeInfo()
         })
 
         box.addView(Space(this).apply {
-            layoutParams = LinearLayout.LayoutParams(1, 0, 0.12f)
+            layoutParams = LinearLayout.LayoutParams(1, 0, 0.22f)
         })
 
         val settingsButton = Button(this).apply {
