@@ -313,6 +313,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun fmt(x: Double): String = String.format(Locale.US, "%.3f", x)
 
+    // Five decimal places for prices shown on the SL/TP results page.
+    private fun fmtPrice(x: Double): String = String.format(Locale.US, "%.5f", x)
+
     private fun calculateTradeAndShow() {
         val feePct = getStoredFee()
         val profitPct = num("profit")
@@ -408,7 +411,7 @@ class MainActivity : AppCompatActivity() {
                 layoutParams = LinearLayout.LayoutParams(-1, 0, 0.42f)
             }
             val v = TextView(this@MainActivity).apply {
-                text = fmt(value)
+                text = fmtPrice(value)
                 textSize = 30f
                 typeface = Typeface.DEFAULT_BOLD
                 gravity = Gravity.CENTER
