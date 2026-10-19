@@ -124,6 +124,9 @@ class MainActivity : AppCompatActivity() {
         box.addView(homeOption("محاسبه RR اسمی") {
             showNominalInfo()
         })
+        box.addView(homeOption("محاسبه RR واقعی") {
+            showActualRrInfo()
+        })
         box.addView(homeOption("محاسبه SL و TP") {
             showTradeInfo()
         })
@@ -352,10 +355,11 @@ class MainActivity : AppCompatActivity() {
         val bBreakEven = if (isLong) 1.0 + aBreakEven else 1.0 - aBreakEven
         val breakeven = entry * bBreakEven
 
-        showTradeResult(sl, tp, entry, breakeven)
+        val feeAmount = (feePct / 100.0) * trade
+        showTradeResult(sl, tp, entry, breakeven, feeAmount)
     }
 
-    private fun showTradeResult(sl: Double, tp: Double, entry: Double, breakeven: Double) {
+    private fun showTradeResult(sl: Double, tp: Double, entry: Double, breakeven: Double, feeAmount: Double) {
         page = 2
         clear()
         next.visibility = View.VISIBLE
@@ -427,8 +431,120 @@ class MainActivity : AppCompatActivity() {
         box.addView(resultCard("Take Profit", tp, 0xFF43A047.toInt()))
         box.addView(resultCard("نقطه سر به سر", breakeven, 0xFF42A5F5.toInt()))
         box.addView(resultCard("قیمت ورود", entry, 0xFFE6E6E6.toInt()))
+        box.addView(resultCard("مقدار کارمزد (تتر)", feeAmount, 0xFFE6E6E6.toInt()))
         scroll.addView(box)
         container.addView(scroll)
+    }
+
+    private fun showActualRrInfo(preserveValues: Boolean = false) {
+        page = 7
+        clear()
+        next.visibility = View.VISIBLE
+        next.text = "محاسبه"
+        setHeader("محاسبه RR واقعی", "مقادیر را وارد کنید")
+
+        val box = baseLayout().apply {
+            setPadding(dp(2), dp(8), dp(2), dp(8))
+        }
+        box.addView(Space(this).apply {
+            layoutParams = LinearLayout.LayoutParams(1, 0, 0.24f)
+        })
+
+        val slCard = card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(120)).apply {
+                topMargin = dp(6)
+                bottomMargin = dp(6)
+            }
+        }
+        slCard.addView(label("SL (%)").apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f)
+            gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
+        })
+        slCard.addView(field("actual_sl", "مثلاً 0.5", if (preserveValues) inputs["actual_sl"]?.text?.toString() ?: "" else "").apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.57f)
+        })
+        box.addView(slCard)
+
+        val rrCard = card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(120)).apply {
+                topMargin = dp(6)
+                bottomMargin = dp(6)
+            }
+        }
+        rrCard.addView(label("TradingView RR").apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f)
+            gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
+        })
+        rrCard.addView(field("tv_rr", "مثلاً 2", if (preserveValues) inputs["tv_rr"]?.text?.toString() ?: "2" else "2").apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.57f)
+        })
+        box.addView(rrCard)
+
+        box.addView(Space(this).apply {
+            layoutParams = LinearLayout.LayoutParams(1, 0, 0.40f)
+        })
+        container.addView(box)
+    }
+
+    private fun calculateActualRrAndShow() {
+        val sl = num("actual_sl")
+        val tvRr = num("tv_rr")
+        val feeFraction = getStoredFee() / 100.0
+        if (sl == null || tvRr == null || sl <= 0.0 || tvRr < 0.0) {
+            Toast.makeText(this, "لطفاً SL و TradingView RR را صحیح وارد کنید.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        // Formula requested: a = nominal RR × SL; b = a − fee; c = SL + fee; Actual RR = b / c.
+        // Fee is stored as a percentage, so convert it to a fraction by dividing by 100.
+        val a = tvRr * sl
+        val b = a - feeFraction
+        val c = sl + feeFraction
+        if (c == 0.0) {
+            Toast.makeText(this, "مقادیر واردشده قابل محاسبه نیستند.", Toast.LENGTH_SHORT).show()
+            return
+        }
+        showActualRrResult(b / c)
+    }
+
+    private fun showActualRrResult(actualRr: Double) {
+        page = 8
+        clear()
+        next.visibility = View.VISIBLE
+        next.text = "بازگشت به اطلاعات"
+        setHeader("نتیجه محاسبه", "Actual RR")
+
+        val box = baseLayout().apply { setPadding(dp(6), dp(8), dp(6), dp(16)) }
+        box.addView(Space(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 0.30f) })
+        val result = card().apply {
+            background = android.graphics.drawable.GradientDrawable().apply {
+                setColor(0xFFE3F2FD.toInt())
+                setStroke(dp(2), 0xFF42A5F5.toInt())
+                cornerRadius = dp(18).toFloat()
+            }
+            layoutParams = LinearLayout.LayoutParams(-1, dp(190)).apply {
+                topMargin = dp(10)
+                bottomMargin = dp(10)
+            }
+        }
+        result.addView(TextView(this).apply {
+            text = "Actual RR"
+            textSize = 19f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setTextColor(0xFF172033.toInt())
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.42f)
+        })
+        result.addView(TextView(this).apply {
+            text = fmt(actualRr)
+            textSize = 34f
+            typeface = Typeface.DEFAULT_BOLD
+            gravity = Gravity.CENTER
+            setTextColor(0xFF172033.toInt())
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.58f)
+        })
+        box.addView(result)
+        box.addView(Space(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 0.42f) })
+        container.addView(box)
     }
 
     private fun showNominalInfo(preserveValues: Boolean = false) {
@@ -555,9 +671,10 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         when (page) {
             0 -> super.onBackPressed()
-            1, 4, 5 -> showHome()
+            1, 4, 5, 7 -> showHome()
             2 -> showTradeInfo(true)
             6 -> showNominalInfo(true)
+            8 -> showActualRrInfo(true)
             else -> showHome()
         }
     }
@@ -572,6 +689,8 @@ class MainActivity : AppCompatActivity() {
                 4 -> saveSettingsAndReturnHome()
                 5 -> calculateNominalAndShow()
                 6 -> showNominalInfo(true)
+                7 -> calculateActualRrAndShow()
+                8 -> showActualRrInfo(true)
                 else -> showHome()
             }
         }
