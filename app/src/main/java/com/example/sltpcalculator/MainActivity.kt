@@ -345,7 +345,7 @@ class MainActivity : AppCompatActivity() {
             e = c / trade + 1.0
         } else {
             f = d / trade + 1.0
-            e = c / trade - 1.0
+            e = 1.0 - c / trade
         }
         val sl = f * entry!!
         val tp = e * entry
@@ -489,13 +489,13 @@ class MainActivity : AppCompatActivity() {
     private fun calculateActualRrAndShow() {
         val sl = num("actual_sl")
         val tvRr = num("tv_rr")
-        val feeFraction = getStoredFee() / 100.0
+        val feeFraction = getStoredFee()
         if (sl == null || tvRr == null || sl <= 0.0 || tvRr < 0.0) {
             Toast.makeText(this, "لطفاً SL و TradingView RR را صحیح وارد کنید.", Toast.LENGTH_SHORT).show()
             return
         }
         // Formula requested: a = nominal RR × SL; b = a − fee; c = SL + fee; Actual RR = b / c.
-        // Fee is stored as a percentage, so convert it to a fraction by dividing by 100.
+        // Use the stored fee percentage directly, as requested; do not divide by 100.
         val a = tvRr * sl
         val b = a - feeFraction
         val c = sl + feeFraction
