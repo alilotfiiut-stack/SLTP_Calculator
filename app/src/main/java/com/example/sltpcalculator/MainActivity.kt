@@ -211,9 +211,8 @@ class MainActivity : AppCompatActivity() {
         val specs = listOf(
             Triple("entry", "قیمت ورود", ""),
             Triple("trade", "حجم معامله", ""),
-            Triple("base", "حجم بیس اکانت", ""),
-            Triple("profit", "ضرر مورد انتظار (%)", ""),
-            Triple("real_rr", "Actual RR", "1")
+            Triple("loss", "ضرر مورد انتظار (تتر)", ""),
+            Triple("profit", "سود مورد انتظار (تتر)", "")
         )
 
         specs.forEach { (k, l, v) ->
@@ -321,41 +320,38 @@ class MainActivity : AppCompatActivity() {
 
     private fun calculateTradeAndShow() {
         val feePct = getStoredFee()
-        val profitPct = num("profit")
-        val base = num("base")
+        val expectedProfit = num("profit")
+        val expectedLoss = num("loss")
         val trade = num("trade")
         val entry = num("entry")
-        val realRr = num("real_rr")
 
-        if (listOf(profitPct, base, trade, entry, realRr).any { it == null } ||
-            trade!! <= 0.0 || base!! <= 0.0) {
+        if (listOf(expectedProfit, expectedLoss, trade, entry).any { it == null } ||
+            trade!! <= 0.0 || entry!! <= 0.0 || expectedProfit!! < 0.0 || expectedLoss!! < 0.0) {
             Toast.makeText(this, "لطفاً همه مقادیر را صحیح وارد کنید.", Toast.LENGTH_SHORT).show()
             return
         }
 
-        // Existing SL/TP calculation logic is intentionally unchanged.
-        val a = (feePct / 100.0) * trade
-        val b = (profitPct!! / 100.0) * base
-        val c = a + realRr!! * b
-        val d = b - a
-        val f: Double
-        val e: Double
+        // Keep the existing fee amount and break-even calculations unchanged.
+        val feeAmount = (feePct / 100.0) * trade
+        val a = feeAmount + expectedProfit
+        val b = expectedLoss - feeAmount
+        val c = a / trade
+        val d = b / trade
+        val h: Double
+        val k: Double
         if (isLong) {
-            f = d / trade - 1.0
-            e = c / trade + 1.0
+            h = c + 1.0
+            k = 1.0 - d
         } else {
-            f = d / trade + 1.0
-            e = 1.0 - c / trade
+            h = 1.0 - c
+            k = 1.0 + d
         }
-        val sl = f * entry!!
-        val tp = e * entry
+        val sl = k * entry
+        val tp = h * entry
 
-        // Break-even: A = fee(%)/100; Long: b = 1 + A; Short: b = 1 - A
         val aBreakEven = feePct / 100.0
         val bBreakEven = if (isLong) 1.0 + aBreakEven else 1.0 - aBreakEven
         val breakeven = entry * bBreakEven
-
-        val feeAmount = (feePct / 100.0) * trade
         showTradeResult(sl, tp, entry, breakeven, feeAmount)
     }
 
@@ -471,7 +467,7 @@ class MainActivity : AppCompatActivity() {
                 bottomMargin = dp(6)
             }
         }
-        rrCard.addView(label("TradingView RR").apply {
+        rrCard.addView(label("TradingView RR Base").apply {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f)
             gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
         })
@@ -480,8 +476,23 @@ class MainActivity : AppCompatActivity() {
         })
         box.addView(rrCard)
 
+        val stepCard = card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(120)).apply {
+                topMargin = dp(6)
+                bottomMargin = dp(6)
+            }
+        }
+        stepCard.addView(label("پله تغییر RR").apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f)
+            gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
+        })
+        stepCard.addView(field("actual_step", "مثلاً 0.5", if (preserveValues) inputs["actual_step"]?.text?.toString() ?: "0.5" else "0.5").apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.57f)
+        })
+        box.addView(stepCard)
+
         box.addView(Space(this).apply {
-            layoutParams = LinearLayout.LayoutParams(1, 0, 0.40f)
+            layoutParams = LinearLayout.LayoutParams(1, 0, 0.20f)
         })
         container.addView(box)
     }
@@ -489,62 +500,34 @@ class MainActivity : AppCompatActivity() {
     private fun calculateActualRrAndShow() {
         val sl = num("actual_sl")
         val tvRr = num("tv_rr")
+        val step = num("actual_step")
         val feeFraction = getStoredFee()
-        if (sl == null || tvRr == null || sl <= 0.0 || tvRr < 0.0) {
-            Toast.makeText(this, "لطفاً SL و TradingView RR را صحیح وارد کنید.", Toast.LENGTH_SHORT).show()
+        if (sl == null || tvRr == null || step == null || sl <= 0.0 || tvRr < 0.0 || step < 0.0) {
+            Toast.makeText(this, "لطفاً SL، TradingView RR Base و پله تغییر را صحیح وارد کنید.", Toast.LENGTH_SHORT).show()
             return
         }
-        // Formula requested: a = nominal RR × SL; b = a − fee; c = SL + fee; Actual RR = b / c.
-        // Use the stored fee percentage directly, as requested; do not divide by 100.
-        val a = tvRr * sl
-        val b = a - feeFraction
-        val c = sl + feeFraction
-        if (c == 0.0) {
-            Toast.makeText(this, "مقادیر واردشده قابل محاسبه نیستند.", Toast.LENGTH_SHORT).show()
-            return
+        val values = (0..4).map { i ->
+            val rr = tvRr + i * step
+            val a = rr * sl
+            val b = a - feeFraction
+            val c = sl + feeFraction
+            val actual = if (c == 0.0) 0.0 else b / c
+            Triple(i + 1, rr, actual)
         }
-        showActualRrResult(b / c)
+        showActualRrResult(values)
     }
 
-    private fun showActualRrResult(actualRr: Double) {
+    private fun showActualRrResult(rows: List<Triple<Int, Double, Double>>) {
         page = 8
         clear()
         next.visibility = View.VISIBLE
         next.text = "بازگشت به اطلاعات"
-        setHeader("نتیجه محاسبه", "Actual RR")
-
+        setHeader("نتیجه محاسبه", "RR واقعی")
+        val scroll = ScrollView(this).apply { layoutParams = FrameLayout.LayoutParams(-1, -1) }
         val box = baseLayout().apply { setPadding(dp(6), dp(8), dp(6), dp(16)) }
-        box.addView(Space(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 0.30f) })
-        val result = card().apply {
-            background = android.graphics.drawable.GradientDrawable().apply {
-                setColor(0xFFE3F2FD.toInt())
-                setStroke(dp(2), 0xFF42A5F5.toInt())
-                cornerRadius = dp(18).toFloat()
-            }
-            layoutParams = LinearLayout.LayoutParams(-1, dp(190)).apply {
-                topMargin = dp(10)
-                bottomMargin = dp(10)
-            }
-        }
-        result.addView(TextView(this).apply {
-            text = "Actual RR"
-            textSize = 19f
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            setTextColor(0xFF172033.toInt())
-            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.42f)
-        })
-        result.addView(TextView(this).apply {
-            text = fmt(actualRr)
-            textSize = 34f
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            setTextColor(0xFF172033.toInt())
-            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.58f)
-        })
-        box.addView(result)
-        box.addView(Space(this).apply { layoutParams = LinearLayout.LayoutParams(1, 0, 0.42f) })
-        container.addView(box)
+        box.addView(makeRrTable("RR واقعی", "TradingView RR", rows.map { Triple(it.first, it.second, it.third) }))
+        scroll.addView(box)
+        container.addView(scroll)
     }
 
     private fun showNominalInfo(preserveValues: Boolean = false) {
@@ -582,7 +565,7 @@ class MainActivity : AppCompatActivity() {
                 bottomMargin = dp(6)
             }
         }
-        rrCard.addView(label("Actual RR").apply {
+        rrCard.addView(label("Actual RR Base").apply {
             layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f)
             gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
         })
@@ -591,8 +574,23 @@ class MainActivity : AppCompatActivity() {
         })
         box.addView(rrCard)
 
+        val stepCard = card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(120)).apply {
+                topMargin = dp(6)
+                bottomMargin = dp(6)
+            }
+        }
+        stepCard.addView(label("پله تغییر RR").apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f)
+            gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
+        })
+        stepCard.addView(field("nominal_step", "مثلاً 0.5", if (preserveValues) inputs["nominal_step"]?.text?.toString() ?: "0.5" else "0.5").apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.57f)
+        })
+        box.addView(stepCard)
+
         box.addView(Space(this).apply {
-            layoutParams = LinearLayout.LayoutParams(1, 0, 0.40f)
+            layoutParams = LinearLayout.LayoutParams(1, 0, 0.20f)
         })
         container.addView(box)
     }
@@ -600,72 +598,74 @@ class MainActivity : AppCompatActivity() {
     private fun calculateNominalAndShow() {
         val sl = num("nominal_sl")
         val realRr = num("nominal_rr")
+        val step = num("nominal_step")
         val fee = getStoredFee()
 
-        if (sl == null || realRr == null || sl <= 0.0 || realRr < 0.0) {
-            Toast.makeText(this, "لطفاً SL و RR واقعی را صحیح وارد کنید.", Toast.LENGTH_SHORT).show()
+        if (sl == null || realRr == null || step == null || sl <= 0.0 || realRr < 0.0 || step < 0.0) {
+            Toast.makeText(this, "لطفاً SL، Actual RR Base و پله تغییر را صحیح وارد کنید.", Toast.LENGTH_SHORT).show()
             return
         }
-
-        // RR nominal formula requested by the user:
-        // a = 1 + RR واقعی
-        // b = fee * a
-        // c = b / SL
-        // RR اسمی = RR واقعی + c
-        val a = 1.0 + realRr
-        val b = fee * a
-        val c = b / sl
-        val nominalRr = realRr + c
-
-        showNominalResult(nominalRr)
+        val values = (0..4).map { i ->
+            val rr = realRr + i * step
+            val a = 1.0 + rr
+            val b = fee * a
+            val c = b / sl
+            val nominalRr = rr + c
+            Triple(i + 1, rr, nominalRr)
+        }
+        showNominalResult(values)
     }
 
-    private fun showNominalResult(nominalRr: Double) {
+    private fun showNominalResult(rows: List<Triple<Int, Double, Double>>) {
         page = 6
         clear()
         next.visibility = View.VISIBLE
         next.text = "بازگشت به اطلاعات معامله"
         setHeader("نتیجه محاسبه", "RR اسمی")
+        val scroll = ScrollView(this).apply { layoutParams = FrameLayout.LayoutParams(-1, -1) }
+        val box = baseLayout().apply { setPadding(dp(6), dp(8), dp(6), dp(16)) }
+        box.addView(makeRrTable("RR اسمی", "Actual RR Base", rows))
+        scroll.addView(box)
+        container.addView(scroll)
+    }
 
-        val box = baseLayout().apply {
-            setPadding(dp(6), dp(8), dp(6), dp(16))
+    private fun makeRrTable(title: String, baseTitle: String, rows: List<Triple<Int, Double, Double>>): LinearLayout {
+        val outer = card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) }
         }
-        box.addView(Space(this).apply {
-            layoutParams = LinearLayout.LayoutParams(1, 0, 0.30f)
+        outer.addView(label(title).apply {
+            gravity = Gravity.CENTER
+            textSize = 20f
+            setPadding(0, dp(8), 0, dp(12))
         })
+        val table = TableLayout(this).apply { isStretchAllColumns = true }
+        val header = TableRow(this)
+        listOf("ردیف", baseTitle, title).forEach { txt ->
+            header.addView(tableCell(txt, true))
+        }
+        table.addView(header)
+        rows.forEach { (index, baseValue, resultValue) ->
+            val row = TableRow(this)
+            row.addView(tableCell(index.toString(), false))
+            row.addView(tableCell(fmt(baseValue), false))
+            row.addView(tableCell(fmt(resultValue), false))
+            table.addView(row)
+        }
+        outer.addView(table)
+        return outer
+    }
 
-        val result = card().apply {
-            background = android.graphics.drawable.GradientDrawable().apply {
-                setColor(0xFFE3F2FD.toInt())
-                setStroke(dp(2), 0xFF42A5F5.toInt())
-                cornerRadius = dp(18).toFloat()
-            }
-            layoutParams = LinearLayout.LayoutParams(-1, dp(190)).apply {
-                topMargin = dp(10)
-                bottomMargin = dp(10)
-            }
+    private fun tableCell(value: String, header: Boolean): TextView = TextView(this).apply {
+        text = value
+        textSize = if (header) 13f else 15f
+        gravity = Gravity.CENTER
+        setTextColor(0xFF172033.toInt())
+        if (header) setTypeface(Typeface.DEFAULT, Typeface.BOLD)
+        setPadding(dp(5), dp(12), dp(5), dp(12))
+        background = android.graphics.drawable.GradientDrawable().apply {
+            setColor(if (header) 0xFFE3F2FD.toInt() else 0xFFF7F8FA.toInt())
+            setStroke(dp(1), 0xFFD4D9E2.toInt())
         }
-        result.addView(TextView(this).apply {
-            text = "RR اسمی"
-            textSize = 19f
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            setTextColor(0xFF172033.toInt())
-            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.42f)
-        })
-        result.addView(TextView(this).apply {
-            text = fmt(nominalRr)
-            textSize = 34f
-            typeface = Typeface.DEFAULT_BOLD
-            gravity = Gravity.CENTER
-            setTextColor(0xFF172033.toInt())
-            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.58f)
-        })
-        box.addView(result)
-        box.addView(Space(this).apply {
-            layoutParams = LinearLayout.LayoutParams(1, 0, 0.42f)
-        })
-        container.addView(box)
     }
 
     override fun onBackPressed() {
