@@ -1,9 +1,5 @@
 <resources>
-    <color name="bg">#F7F8FC</color>
-    <color name="card">#FFFFFF</color>
-    <color name="primary">#2457D6</color>
-    <color name="primary_dark">#1742A5</color>
-    <color name="text">#172033</color>
-    <color name="muted">#687386</color>
-    <color name="border">#DDE2EA</color>
+    <color name="bg">#F7F8FC</color><color name="card">#FFFFFF</color>
+    <color name="primary">#2457D6</color><color name="primary_dark">#1742A5</color>
+    <color name="text">#172033</color><color name="muted">#687386</color><color name="border">#DDE2EA</color>
 </resources>
