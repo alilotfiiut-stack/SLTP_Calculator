@@ -111,7 +111,7 @@ class MainActivity : AppCompatActivity() {
 
                 addView(TextView(this@MainActivity).apply {
                     text = title
-                    textSize = 19f
+                    textSize = if (title.contains("RR") || title.contains("SL")) 18f else 19f
                     typeface = Typeface.DEFAULT_BOLD
                     gravity = Gravity.CENTER
                     textAlignment = View.TEXT_ALIGNMENT_CENTER
@@ -126,6 +126,9 @@ class MainActivity : AppCompatActivity() {
         })
         box.addView(homeOption("محاسبه RR واقعی") {
             showActualRrInfo()
+        })
+        box.addView(homeOption("محاسبه سود و زیان") {
+            showPnlInfo()
         })
         box.addView(homeOption("محاسبه SL و TP") {
             showTradeInfo()
@@ -241,6 +244,163 @@ class MainActivity : AppCompatActivity() {
             addView(box)
         }
         container.addView(scroll)
+    }
+
+
+    // PnL screen: matches the latest standalone HTML calculator.
+    private fun showPnlInfo(preserveValues: Boolean = false) {
+        page = 9
+        val saved = if (preserveValues) listOf("pnl_entry", "pnl_volume", "pnl_stop", "pnl_target")
+            .associateWith { inputs[it]?.text?.toString() ?: "" } else emptyMap()
+        clear()
+        next.visibility = View.VISIBLE
+        next.text = "محاسبه"
+        setHeader("محاسبه سود و زیان", "قیمت ورود، حجم و حداقل یک قیمت خروج را وارد کنید")
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(0), dp(0), dp(0), dp(2))
+        }
+        val directionCard = card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(72)).apply {
+                topMargin = dp(2); bottomMargin = dp(5)
+            }
+        }
+        directionCard.addView(label("جهت معامله").apply {
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.42f)
+            gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
+        })
+        val rg = RadioGroup(this).apply {
+            orientation = RadioGroup.HORIZONTAL
+            gravity = Gravity.CENTER
+            layoutDirection = View.LAYOUT_DIRECTION_LTR
+            layoutParams = LinearLayout.LayoutParams(-1, 0, 0.58f)
+        }
+        val long = RadioButton(this).apply {
+            id = View.generateViewId(); text = "Long"; textSize = 17f
+            isChecked = isLong; setPadding(dp(14), dp(2), dp(14), dp(2))
+        }
+        val short = RadioButton(this).apply {
+            id = View.generateViewId(); text = "Short"; textSize = 17f
+            isChecked = !isLong; setPadding(dp(14), dp(2), dp(14), dp(2))
+        }
+        rg.addView(long); rg.addView(short)
+        rg.setOnCheckedChangeListener { _, checkedId -> isLong = checkedId == long.id }
+        directionCard.addView(rg)
+        box.addView(directionCard)
+        listOf(
+            "pnl_entry" to "قیمت ورود",
+            "pnl_volume" to "حجم معامله",
+            "pnl_stop" to "Stop Price",
+            "pnl_target" to "Target Price"
+        ).forEach { (key, title) ->
+            val c = card().apply {
+                layoutParams = LinearLayout.LayoutParams(-1, dp(72)).apply {
+                    topMargin = dp(3); bottomMargin = dp(5)
+                }
+            }
+            c.addView(label(title).apply {
+                layoutParams = LinearLayout.LayoutParams(-1, 0, 0.43f)
+                gravity = Gravity.CENTER_VERTICAL or Gravity.RIGHT
+            })
+            c.addView(field(key, "", saved[key] ?: "").apply {
+                layoutParams = LinearLayout.LayoutParams(-1, 0, 0.57f)
+            })
+            box.addView(c)
+        }
+        container.addView(ScrollView(this).apply {
+            isFillViewport = true
+            layoutParams = FrameLayout.LayoutParams(-1, -1)
+            addView(box)
+        })
+    }
+
+    private fun calculatePnlAndShow() {
+        val entry = num("pnl_entry")
+        val volume = num("pnl_volume")
+        val stop = num("pnl_stop")
+        val target = num("pnl_target")
+        if (entry == null || entry <= 0.0 || volume == null || volume <= 0.0 ||
+            (stop == null && target == null) ||
+            (stop != null && stop <= 0.0) || (target != null && target <= 0.0)) {
+            Toast.makeText(this, "قیمت ورود و حجم باید مثبت باشند و حداقل یکی از Stop Price یا Target Price وارد شود.", Toast.LENGTH_LONG).show()
+            return
+        }
+        val feeAmount = getStoredFee() / 100.0 * volume
+        if (!feeAmount.isFinite() || feeAmount < 0.0) {
+            Toast.makeText(this, "مقدار کارمزد را در تنظیمات اصلاح کنید.", Toast.LENGTH_LONG).show()
+            return
+        }
+        fun amount(exit: Double): Double =
+            (if (isLong) exit / entry - 1.0 else 1.0 - exit / entry) * volume - feeAmount
+        showPnlResult(stop?.let(::amount), target?.let(::amount), feeAmount)
+    }
+
+    private fun showPnlResult(stopAmount: Double?, targetAmount: Double?, feeAmount: Double) {
+        page = 10
+        clear()
+        next.visibility = View.VISIBLE
+        next.text = "بازگشت به اطلاعات معامله"
+        setHeader("نتیجه محاسبه", "محاسبه سود و زیان")
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            gravity = Gravity.CENTER_HORIZONTAL
+            layoutDirection = View.LAYOUT_DIRECTION_RTL
+            setPadding(dp(6), dp(8), dp(6), dp(16))
+        }
+        fun addResult(title: String, amount: Double, color: Int) {
+            val c = card().apply {
+                background = android.graphics.drawable.GradientDrawable().apply {
+                    setColor(when (color) {
+                        0xFF43A047.toInt() -> 0xFFE8F5E9.toInt()
+                        0xFFE53935.toInt() -> 0xFFFFEBEE.toInt()
+                        else -> 0xFFF1F3F6.toInt()
+                    })
+                    setStroke(dp(2), color)
+                    cornerRadius = dp(18).toFloat()
+                }
+                layoutParams = LinearLayout.LayoutParams(-1, dp(118)).apply {
+                    topMargin = dp(6); bottomMargin = dp(6)
+                }
+            }
+            c.addView(TextView(this).apply {
+                text = title; textSize = 17f; typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER; setTextColor(0xFF172033.toInt())
+                layoutParams = LinearLayout.LayoutParams(-1, 0, 0.45f)
+            })
+            c.addView(TextView(this).apply {
+                text = fmtPrice(amount); textSize = 27f; typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER; setTextColor(0xFF172033.toInt())
+                layoutParams = LinearLayout.LayoutParams(-1, 0, 0.55f)
+            })
+            box.addView(c)
+        }
+        box.addView(card().apply {
+            layoutParams = LinearLayout.LayoutParams(-1, dp(68)).apply { bottomMargin = dp(10) }
+            addView(TextView(this@MainActivity).apply {
+                text = if (isLong) "LONG" else "SHORT"
+                textSize = 22f
+                typeface = Typeface.DEFAULT_BOLD
+                gravity = Gravity.CENTER
+                setTextColor(0xFF172033.toInt())
+                layoutParams = LinearLayout.LayoutParams(-1, -1)
+            })
+        })
+        if (stopAmount != null) addResult(
+            if (stopAmount >= 0) "مقدار سود Stop Price (تتر)" else "مقدار زیان Stop Price (تتر)",
+            stopAmount, if (stopAmount >= 0) 0xFF43A047.toInt() else 0xFFE53935.toInt()
+        )
+        if (targetAmount != null) addResult(
+            if (targetAmount >= 0) "مقدار سود Target Price (تتر)" else "مقدار زیان Target Price (تتر)",
+            targetAmount, if (targetAmount >= 0) 0xFF43A047.toInt() else 0xFFE53935.toInt()
+        )
+        addResult("مقدار کارمزد (تتر)", feeAmount, 0xFFE6E6E6.toInt())
+        container.addView(ScrollView(this).apply {
+            isFillViewport = true
+            layoutParams = FrameLayout.LayoutParams(-1, -1)
+            addView(box)
+        })
     }
 
     private fun showSettings() {
@@ -671,10 +831,11 @@ class MainActivity : AppCompatActivity() {
     override fun onBackPressed() {
         when (page) {
             0 -> super.onBackPressed()
-            1, 4, 5, 7 -> showHome()
+            1, 4, 5, 7, 9 -> showHome()
             2 -> showTradeInfo(true)
             6 -> showNominalInfo(true)
             8 -> showActualRrInfo(true)
+            10 -> showPnlInfo(true)
             else -> showHome()
         }
     }
@@ -691,6 +852,8 @@ class MainActivity : AppCompatActivity() {
                 6 -> showNominalInfo(true)
                 7 -> calculateActualRrAndShow()
                 8 -> showActualRrInfo(true)
+                9 -> calculatePnlAndShow()
+                10 -> showPnlInfo(true)
                 else -> showHome()
             }
         }
