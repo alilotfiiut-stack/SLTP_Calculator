@@ -4,6 +4,8 @@ import android.content.Context
 import android.os.Bundle
 import android.graphics.Typeface
 import android.text.InputType
+import android.text.TextWatcher
+import android.text.Editable
 import android.view.Gravity
 import android.view.View
 import android.widget.*
@@ -21,6 +23,8 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val PREFS_NAME = "sltp_calculator_settings"
         private const val KEY_FEE = "fee_percent"
+        private const val KEY_INPUT_PREFIX = "input_"
+        private const val KEY_IS_LONG = "is_long"
         private const val DEFAULT_FEE = 0.2
     }
 
@@ -29,6 +33,8 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
         container = findViewById(R.id.container)
         next = findViewById(R.id.nextButton)
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        isLong = prefs.getBoolean(KEY_IS_LONG, true)
         showHome()
     }
 
@@ -54,7 +60,16 @@ class MainActivity : AppCompatActivity() {
         textSize = 17f
         setSingleLine(true)
         setHint(hint)
-        setText(value)
+        val prefs = getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val savedValue = prefs.getString(KEY_INPUT_PREFIX + key, null)
+        setText(savedValue ?: value)
+        addTextChangedListener(object : TextWatcher {
+            override fun beforeTextChanged(s: CharSequence?, start: Int, count: Int, after: Int) {}
+            override fun onTextChanged(s: CharSequence?, start: Int, before: Int, count: Int) {
+                prefs.edit().putString(KEY_INPUT_PREFIX + key, s?.toString() ?: "").apply()
+            }
+            override fun afterTextChanged(s: Editable?) {}
+        })
         gravity = Gravity.CENTER
         layoutDirection = View.LAYOUT_DIRECTION_LTR
         background = getDrawable(R.drawable.bg_input)
@@ -207,7 +222,11 @@ class MainActivity : AppCompatActivity() {
         }
         rg.addView(long)
         rg.addView(sh)
-        rg.setOnCheckedChangeListener { _, id -> isLong = id == long.id }
+        rg.setOnCheckedChangeListener { _, id ->
+            isLong = id == long.id
+            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                .putBoolean(KEY_IS_LONG, isLong).apply()
+        }
         directionCard.addView(rg)
         box.addView(directionCard)
 
@@ -286,7 +305,11 @@ class MainActivity : AppCompatActivity() {
             isChecked = !isLong; setPadding(dp(14), dp(2), dp(14), dp(2))
         }
         rg.addView(long); rg.addView(short)
-        rg.setOnCheckedChangeListener { _, checkedId -> isLong = checkedId == long.id }
+        rg.setOnCheckedChangeListener { _, checkedId ->
+            isLong = checkedId == long.id
+            getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE).edit()
+                .putBoolean(KEY_IS_LONG, isLong).apply()
+        }
         directionCard.addView(rg)
         box.addView(directionCard)
         listOf(
